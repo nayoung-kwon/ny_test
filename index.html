@@ -1,12 +1,209 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>내 랜딩 페이지</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 웹툰 북마크</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#0d0d0d;color:#fff;min-height:100vh}
+  .header{padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(255,255,255,0.08)}
+  .logo{font-size:18px;font-weight:500;letter-spacing:-0.3px;color:#fff}
+  .logo span{color:#00d564}
+  .header-meta{font-size:13px;color:rgba(255,255,255,0.4)}
+  .section{padding:2rem 2rem 0}
+  .section-title{font-size:15px;font-weight:500;color:rgba(255,255,255,0.9);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:'';display:inline-block;width:3px;height:15px;background:#00d564;border-radius:2px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:2.5rem}
+  .card{cursor:pointer;transition:transform 0.2s}
+  .card:hover{transform:scale(1.04)}
+  .card:hover .card-overlay{opacity:1}
+  .thumb{width:100%;aspect-ratio:3/4;border-radius:8px;overflow:hidden;position:relative;background:#1e1e1e}
+  .thumb-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px}
+  .card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,transparent 50%);opacity:0;transition:opacity 0.2s;border-radius:8px;display:flex;align-items:flex-end;padding:10px}
+  .badge-new{position:absolute;top:8px;right:8px;background:#00d564;color:#003a1a;font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px}
+  .badge-up{position:absolute;top:8px;right:8px;background:#ff4e4e;color:#fff;font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px}
+  .overlay-btn{font-size:11px;color:#fff;background:rgba(255,255,255,0.2);border:none;padding:4px 10px;border-radius:4px;cursor:pointer}
+  .card-info{padding:8px 2px 0}
+  .card-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-author{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
+  .card-day{font-size:11px;color:#00d564;margin-top:2px}
+  .search-bar{margin:1.5rem 2rem 0;display:flex;gap:10px;align-items:center}
+  .search-input{flex:1;background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;font-size:14px;color:#fff;outline:none;font-family:inherit}
+  .search-input::placeholder{color:rgba(255,255,255,0.3)}
+  .search-input:focus{border-color:rgba(0,213,100,0.5)}
+  .filter-chips{display:flex;gap:8px;overflow-x:auto;padding:1rem 2rem 0;scrollbar-width:none}
+  .filter-chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:0.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);background:transparent;transition:all 0.15s;font-family:inherit}
+  .chip.active,.chip:hover{background:#00d564;color:#003a1a;border-color:#00d564}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:1.5rem 2rem;background:#1a1a1a;border-radius:10px;padding:1rem}
+  .stat{text-align:center}
+  .stat-num{font-size:20px;font-weight:500;color:#fff}
+  .stat-label{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
+  .empty-state{text-align:center;padding:2rem;color:rgba(255,255,255,0.3);font-size:13px;grid-column:1/-1}
+  .footer{padding:2rem;border-top:0.5px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.2);text-align:center}
+  @media(max-width:480px){
+    .header{padding:1rem}
+    .section{padding:1.5rem 1rem 0}
+    .search-bar{margin:1rem 1rem 0}
+    .filter-chips{padding:0.75rem 1rem 0}
+    .stats{margin:1rem}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+  }
+</style>
 </head>
 <body>
-  <h1>안녕하세요! 저의 첫 번째 웹페이지입니다.</h1>
-  <p>이 페이지는 곧 멋진 서비스가 될 예정입니다.</p>
+
+<div class="header">
+  <div class="logo"><span>■</span> 내 웹툰</div>
+  <div class="header-meta" id="update-time"></div>
+</div>
+
+<div class="search-bar">
+  <input class="search-input" id="search" placeholder="웹툰 제목 또는 작가 검색..." oninput="filterCards()">
+</div>
+
+<div class="filter-chips" id="chips">
+  <button class="chip active" onclick="filterByDay('all',this)">전체</button>
+  <button class="chip" onclick="filterByDay('월',this)">월요일</button>
+  <button class="chip" onclick="filterByDay('화',this)">화요일</button>
+  <button class="chip" onclick="filterByDay('수',this)">수요일</button>
+  <button class="chip" onclick="filterByDay('목',this)">목요일</button>
+  <button class="chip" onclick="filterByDay('금',this)">금요일</button>
+  <button class="chip" onclick="filterByDay('토',this)">토요일</button>
+  <button class="chip" onclick="filterByDay('일',this)">일요일</button>
+  <button class="chip" onclick="filterByDay('완결',this)">완결</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">구독 중</div></div>
+  <div class="stat"><div class="stat-num" id="today-count">0</div><div class="stat-label">오늘 업데이트</div></div>
+  <div class="stat"><div class="stat-num" id="unread-count">0</div><div class="stat-label">미열람</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">오늘 업데이트</div>
+  <div class="grid" id="today-grid"></div>
+  <div class="section-title">전체 북마크</div>
+  <div class="grid" id="all-grid"></div>
+</div>
+
+<div class="footer">네이버 웹툰 북마크 페이지 · 개인용</div>
+
+<script>
+  /* =====================================================
+   * 웹툰 데이터 — 여기서 직접 추가/수정하세요
+   * day: '월' | '화' | '수' | '목' | '금' | '토' | '일' | '완결'
+   * new: true  → NEW 뱃지 표시
+   * unread: 숫자 → 미열람 에피소드 수 (0이면 뱃지 없음)
+   * color: 썸네일 배경 색상 (이미지 없을 때)
+   * url: 클릭 시 이동할 네이버 웹툰 링크
+   ===================================================== */
+  const webtoons = [
+    {title:"나 혼자만 레벨업", author:"추공",      day:"수", emoji:"⚔️", new:false, unread:3, color:"#1a1a2e", url:"https://comic.naver.com/webtoon/list?titleId=748443"},
+    {title:"재혼 황후",       author:"알파타르트", day:"목", emoji:"👑", new:true,  unread:0, color:"#1e0a2e", url:"https://comic.naver.com/webtoon/list?titleId=751720"},
+    {title:"외모지상주의",    author:"박태준",     day:"월", emoji:"💪", new:false, unread:1, color:"#0a1e2e", url:"https://comic.naver.com/webtoon/list?titleId=570503"},
+    {title:"여신강림",        author:"야옹이",     day:"화", emoji:"🌸", new:false, unread:0, color:"#2e0a1a", url:"https://comic.naver.com/webtoon/list?titleId=703846"},
+    {title:"이태원 클라쓰",   author:"광진",       day:"금", emoji:"🍺", new:true,  unread:2, color:"#1a2e0a", url:"https://comic.naver.com/webtoon/list?titleId=737891"},
+    {title:"유미의 세포들",   author:"이동건",     day:"수", emoji:"🧠", new:false, unread:0, color:"#2e1a0a", url:"https://comic.naver.com/webtoon/list?titleId=651673"},
+    {title:"신의 탑",         author:"SIU",        day:"월", emoji:"🗼", new:false, unread:5, color:"#0a2e2e", url:"https://comic.naver.com/webtoon/list?titleId=183559"},
+    {title:"연애혁명",        author:"민송아",     day:"토", emoji:"💌", new:true,  unread:0, color:"#2e0a2e", url:"https://comic.naver.com/webtoon/list?titleId=617829"},
+    {title:"전지적 독자 시점",author:"싱숑",       day:"금", emoji:"📖", new:false, unread:1, color:"#0a2e1a", url:"https://comic.naver.com/webtoon/list?titleId=748105"},
+    {title:"마음의 소리",     author:"조석",       day:"완결",emoji:"😂",new:false, unread:0, color:"#1e1e1e", url:"https://comic.naver.com/webtoon/list?titleId=119874"},
+    {title:"노블레스",        author:"손제호",     day:"완결",emoji:"🧛",new:false, unread:0, color:"#1a0a0a", url:"https://comic.naver.com/webtoon/list?titleId=87448"},
+    {title:"덴마",            author:"양영순",     day:"목", emoji:"🤖", new:false, unread:2, color:"#0a1a2e", url:"https://comic.naver.com/webtoon/list?titleId=119874"},
+  ];
+
+  /* =====================================================
+   * localStorage로 미열람 상태 저장
+   ===================================================== */
+  function loadUnread() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('webtoon_unread') || '{}');
+      webtoons.forEach(w => {
+        if (saved[w.title] !== undefined) w.unread = saved[w.title];
+      });
+    } catch(e) {}
+  }
+
+  function saveUnread() {
+    const data = {};
+    webtoons.forEach(w => data[w.title] = w.unread);
+    try { localStorage.setItem('webtoon_unread', JSON.stringify(data)); } catch(e) {}
+  }
+
+  /* =====================================================
+   * 오늘 요일 계산
+   ===================================================== */
+  const DAYS = ['일','월','화','수','목','금','토'];
+  const TODAY = DAYS[new Date().getDay()];
+
+  document.getElementById('update-time').textContent =
+    new Date().toLocaleDateString('ko-KR', {month:'long', day:'numeric', weekday:'short'});
+
+  /* =====================================================
+   * 카드 렌더링
+   ===================================================== */
+  function makeCard(w) {
+    const badge = w.new
+      ? `<div class="badge-new">NEW</div>`
+      : w.unread > 0 ? `<div class="badge-up">${w.unread}</div>` : '';
+    return `<div class="card" onclick="openWebtoon('${w.title}')">
+      <div class="thumb" style="background:${w.color}">
+        <div class="thumb-img">${w.emoji}</div>
+        ${badge}
+        <div class="card-overlay"><button class="overlay-btn">바로 읽기</button></div>
+      </div>
+      <div class="card-info">
+        <div class="card-title">${w.title}</div>
+        <div class="card-author">${w.author}</div>
+        <div class="card-day">${w.day === '완결' ? '완결' : w.day + '요일'}</div>
+      </div>
+    </div>`;
+  }
+
+  function render(data) {
+    const todayList = data.filter(w => w.day === TODAY);
+    document.getElementById('today-grid').innerHTML =
+      todayList.length ? todayList.map(makeCard).join('') : '<div class="empty-state">오늘 업데이트가 없어요</div>';
+    document.getElementById('all-grid').innerHTML =
+      data.length ? data.map(makeCard).join('') : '<div class="empty-state">검색 결과가 없어요</div>';
+
+    document.getElementById('total-count').textContent = webtoons.length;
+    document.getElementById('today-count').textContent = webtoons.filter(w => w.day === TODAY).length;
+    document.getElementById('unread-count').textContent = webtoons.reduce((a, w) => a + w.unread, 0);
+  }
+
+  let activeDay = 'all';
+
+  function filterByDay(day, btn) {
+    activeDay = day;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    filterCards();
+  }
+
+  function filterCards() {
+    const q = document.getElementById('search').value.toLowerCase();
+    let filtered = webtoons;
+    if (activeDay !== 'all') filtered = filtered.filter(w => w.day === activeDay);
+    if (q) filtered = filtered.filter(w =>
+      w.title.toLowerCase().includes(q) || w.author.toLowerCase().includes(q));
+    render(filtered);
+  }
+
+  function openWebtoon(title) {
+    const w = webtoons.find(x => x.title === title);
+    if (!w) return;
+    w.unread = 0;
+    w.new = false;
+    saveUnread();
+    filterCards();
+    if (w.url) window.open(w.url, '_blank');
+  }
+
+  loadUnread();
+  filterCards();
+</script>
 </body>
 </html>
